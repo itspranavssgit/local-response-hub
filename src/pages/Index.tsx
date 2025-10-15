@@ -228,5 +228,129 @@ const Index = () => {
     </div>
   );
 };
+// src/pages/EmergencyRequest.tsx
+import React, { useState } from 'react';
+import MapComponent from '../components/MapComponent';
+import { supabase } from '../../integrations/supabase/client'; // adjust path
+
+export default function EmergencyRequest() {
+  const [patients, setPatients] = useState<number>(1);
+  const [emergencyType, setEmergencyType] = useState<string>('');
+  const [contactNumber, setContactNumber] = useState<string>('');
+  const [additionalInfo, setAdditionalInfo] = useState<string>('');
+  const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!coords) {
+      alert('Please allow location detection or set your location on the map.');
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const payload = {
+        location: `${coords.lat},${coords.lng}`, // keep text if you want
+        latitude: coords.lat,
+        longitude: coords.lng,
+        patients,
+        emergency_type: emergencyType,
+        contact_number: contactNumber,
+        additional_info: additionalInfo,
+      };
+      const { data, error } = await supabase.from('emergency_requests').insert([payload]);
+      if (error) {
+        console.error('Insert error:', error);
+        alert('Failed to send emergency request.');
+      } else {
+        alert('Emergency request sent!');
+        // reset form if desired
+        setEmergencyType('');
+        setContactNumber('');
+        setAdditionalInfo('');
+      }
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <div className="max-w-3xl mx-auto p-4">
+      <h1 className="text-2xl font-bold mb-4">Request Emergency Help</h1>
+
+      <div className="mb-4">
+        <h2 className="font-semibold mb-2">Detect / adjust your location</h2>
+        <MapComponent
+          mapHeight="300px"
+          onLocationChange={(loc) => {
+            setCoords(loc);
+          }}
+        />
+        <p className="text-sm mt-2">
+          Chosen coordinates:{' '}
+          {coords ? `${coords.lat.toFixed(6)}, ${coords.lng.toFixed(6)}` : 'No location selected'}
+        </p>
+      </div>
+
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium">Number of patients</label>
+          <input
+            type="number"
+            min={1}
+            value={patients}
+            onChange={(e) => setPatients(Number(e.target.value))}
+            className="mt-1 block w-full border rounded p-2"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium">Type of emergency</label>
+          <input
+            type="text"
+            value={emergencyType}
+            onChange={(e) => setEmergencyType(e.target.value)}
+            placeholder="e.g., bleeding, breathing problem"
+            className="mt-1 block w-full border rounded p-2"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium">Contact number</label>
+          <input
+            type="tel"
+            value={contactNumber}
+            onChange={(e) => setContactNumber(e.target.value)}
+            className="mt-1 block w-full border rounded p-2"
+            placeholder="+91 98xxxxxx"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium">Additional info</label>
+          <textarea
+            rows={3}
+            value={additionalInfo}
+            onChange={(e) => setAdditionalInfo(e.target.value)}
+            className="mt-1 block w-full border rounded p-2"
+            placeholder="Any other details..."
+          />
+        </div>
+
+        <div>
+          <button
+            type="submit"
+            disabled={submitting}
+            className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 disabled:opacity-60"
+          >
+            {submitting ? 'Sending...' : 'Request Help Now'}
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
 
 export default Index;
+
