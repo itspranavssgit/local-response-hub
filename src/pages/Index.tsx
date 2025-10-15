@@ -111,7 +111,7 @@ const Index = () => {
       <main className="container mx-auto px-4 py-8 max-w-2xl">
         <Card className="p-6 shadow-xl border-2">
           <div className="mb-6 text-center">
-            <h2 className="text-3xl font-bold text-foreground mb-2">Request Emergency Help</h2>
+            <h2 className="text-3xl font-bold text-foreground mb-2">Reques Emergency Help</h2>
             <p className="text-muted-foreground">Quick medical transport for rural areas</p>
           </div>
 
