@@ -1,0 +1,38 @@
+{
+  "public": {
+    "Tables": {
+      "emergency_requests": {
+        "Row": {
+          "id": "string",
+          "created_at": "string",
+          "patient_count": "number",
+          "emergency_type": "string",
+          "location_lat": "number",
+          "location_lng": "number",
+          "address": "string | null",
+          "status": "'pending' | 'assigned' | 'completed' | 'cancelled'",
+          "assigned_partner_id": "string | null",
+          "contact_phone": "string | null",
+          "notes": "string | null",
+          "completed_at": "string | null"
+        }
+      },
+      "partners": {
+        "Row": {
+          "id": "string",
+          "created_at": "string",
+          "user_id": "string",
+          "name": "string",
+          "phone": "string",
+          "vehicle_type": "string",
+          "vehicle_number": "string",
+          "is_available": "boolean",
+          "current_lat": "number | null",
+          "current_lng": "number | null",
+          "rating": "number | null",
+          "total_rides": "number"
+        }
+      }
+    }
+  }
+}
