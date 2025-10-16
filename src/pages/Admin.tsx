@@ -10,21 +10,32 @@ import type { User } from "@supabase/supabase-js";
 const Admin = () => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-
-  // NEW: State to store requests
   const [requests, setRequests] = useState<any[]>([]);
 
   const { toast } = useToast();
   const navigate = useNavigate();
 
+  // -------------------------------
+  // 1️⃣ Check user and fetch requests
+  // -------------------------------
   useEffect(() => {
     const checkUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      setUser(user);
-      setLoading(false);
+      try {
+        const { data, error } = await supabase.auth.getUser();
+        if (error) throw error;
 
-      // Fetch requests after user is set
-      if (user) fetchRequests();
+        setUser(data?.user ?? null);
+        setLoading(false);
+
+        if (data?.user) fetchRequests();
+      } catch (err: any) {
+        toast({
+          title: "Error",
+          description: err.message || "Something went wrong",
+          variant: "destructive",
+        });
+        setLoading(false);
+      }
     };
 
     checkUser();
@@ -35,29 +46,34 @@ const Admin = () => {
       if (session?.user) fetchRequests();
     });
 
-    // Cleanup
     return () => subscription.unsubscribe();
   }, [navigate]);
 
-  // NEW: Fetch requests from Supabase
+  // -------------------------------
+  // 2️⃣ Fetch requests from Supabase
+  // -------------------------------
   const fetchRequests = async () => {
-    const { data, error } = await supabase
-      .from("requests") // Replace with your table name
-      .select("*")
-      .order("created_at", { ascending: false });
+    try {
+      const { data, error } = await supabase
+        .from("requests") // Replace with your table name
+        .select("*")
+        .order("created_at", { ascending: false });
 
-    if (error) {
+      if (error) throw error;
+
+      setRequests(data ?? []);
+    } catch (err: any) {
       toast({
         title: "Error fetching requests",
-        description: error.message,
+        description: err.message || "Could not fetch requests",
         variant: "destructive",
       });
-    } else {
-      setRequests(data);
     }
   };
 
-  // NEW: Real-time subscription for new requests
+  // -------------------------------
+  // 3️⃣ Real-time subscription for new requests
+  // -------------------------------
   useEffect(() => {
     const subscription = supabase
       .from("requests")
@@ -71,6 +87,9 @@ const Admin = () => {
     };
   }, []);
 
+  // -------------------------------
+  // 4️⃣ Google Sign In
+  // -------------------------------
   const handleGoogleSignIn = async () => {
     try {
       const { error } = await supabase.auth.signInWithOAuth({
@@ -78,32 +97,39 @@ const Admin = () => {
         options: { redirectTo: `${window.location.origin}/admin` },
       });
       if (error) throw error;
-    } catch (error) {
+    } catch (err: any) {
       toast({
         title: "Sign In Failed",
-        description: "Could not sign in with Google. Please try again.",
+        description: err.message || "Could not sign in with Google",
         variant: "destructive",
       });
     }
   };
 
+  // -------------------------------
+  // 5️⃣ Sign Out
+  // -------------------------------
   const handleSignOut = async () => {
     try {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
+
       toast({
         title: "Signed Out",
         description: "You have been signed out successfully.",
       });
-    } catch (error) {
+    } catch (err: any) {
       toast({
         title: "Sign Out Failed",
-        description: "Could not sign out. Please try again.",
+        description: err.message || "Could not sign out",
         variant: "destructive",
       });
     }
   };
 
+  // -------------------------------
+  // 6️⃣ Loading State
+  // -------------------------------
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -112,6 +138,9 @@ const Admin = () => {
     );
   }
 
+  // -------------------------------
+  // 7️⃣ User Not Logged In
+  // -------------------------------
   if (!user) {
     return (
       <div className="min-h-screen bg-background">
@@ -139,7 +168,6 @@ const Admin = () => {
               className="w-full h-12 text-lg"
               size="lg"
             >
-              {/* Google Icon */}
               Continue with Google
             </Button>
           </Card>
@@ -148,6 +176,9 @@ const Admin = () => {
     );
   }
 
+  // -------------------------------
+  // 8️⃣ Admin Dashboard
+  // -------------------------------
   return (
     <div className="min-h-screen bg-background">
       <header className="bg-primary text-primary-foreground py-4 px-4 shadow-lg">
@@ -157,7 +188,7 @@ const Admin = () => {
             <h1 className="text-2xl font-bold">Admin Dashboard</h1>
           </div>
           <div className="flex items-center gap-4">
-            <span className="text-sm">{user.email}</span>
+            <span className="text-sm">{user?.email ?? "Loading..."}</span>
             <Button variant="secondary" onClick={handleSignOut} size="sm">
               <LogOut className="mr-2 h-4 w-4" />
               Sign Out
@@ -174,12 +205,12 @@ const Admin = () => {
             <p className="text-muted-foreground">No requests yet.</p>
           ) : (
             <div className="space-y-4">
-              {requests.map((req) => (
-                <div key={req.id} className="p-4 border rounded shadow-sm">
-                  <p><strong>Request ID:</strong> {req.id}</p>
-                  <p><strong>Name:</strong> {req.name}</p>
-                  <p><strong>Details:</strong> {req.details}</p>
-                  <p><strong>Date:</strong> {new Date(req.created_at).toLocaleString()}</p>
+              {requests.map((req: any, index: number) => (
+                <div key={req.id ?? index} className="p-4 border rounded shadow-sm">
+                  <p><strong>Request ID:</strong> {req.id ?? "N/A"}</p>
+                  <p><strong>Name:</strong> {req.name ?? "N/A"}</p>
+                  <p><strong>Details:</strong> {req.details ?? "N/A"}</p>
+                  <p><strong>Date:</strong> {req.created_at ? new Date(req.created_at).toLocaleString() : "N/A"}</p>
                 </div>
               ))}
             </div>
