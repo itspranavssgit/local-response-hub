@@ -4,31 +4,21 @@ import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase";
 import { useNavigate } from "react-router-dom";
-import { LogOut, AlertCircle, MapPin, Trash2, Truck } from "lucide-react";
+import { LogOut, AlertCircle, MapPin, User, Trash2, Truck } from "lucide-react";
 import type { User as SupaUser } from "@supabase/supabase-js";
-
-interface EmergencyRequest {
-  id: number;
-  name: string;
-  contact_number: string;
-  patient_count: number;
-  details: string;
-  status?: string;
-  latitude?: number;
-  longitude?: number;
-  created_at: string;
-}
 
 const Admin = () => {
   const [user, setUser] = useState<SupaUser | null>(null);
   const [loading, setLoading] = useState(true);
-  const [requests, setRequests] = useState<EmergencyRequest[]>([]);
+  const [requests, setRequests] = useState([
+    { id: 1, name: "John Doe", details: "Power outage in sector 7", created_at: "2025-10-16 10:00" },
+    { id: 2, name: "Jane Smith", details: "Water leak on 3rd floor", created_at: "2025-10-16 11:15" },
+    { id: 3, name: "Bob Johnson", details: "Elevator stuck at floor 5", created_at: "2025-10-16 12:30" },
+  ]);
+
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  // -------------------------
-  // Authentication
-  // -------------------------
   useEffect(() => {
     const checkUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -46,87 +36,86 @@ const Admin = () => {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
-  // -------------------------
-  // Fetch emergency requests
-  // -------------------------
-  const fetchRequests = async () => {
-    const { data, error } = await supabase
-      .from<EmergencyRequest>("emergency_requests")
-      .select("*")
-      .order("created_at", { ascending: false });
-
-    console.log("Supabase data:", data, "Error:", error);
-
-    if (error) {
-      toast({ title: "Error fetching requests", description: error.message, variant: "destructive" });
-    } else {
-      setRequests(data || []);
+  const handleGoogleSignIn = async () => {
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo: `${window.location.origin}/admin` },
+      });
+      if (error) throw error;
+    } catch (error) {
+      toast({
+        title: "Sign In Failed",
+        description: "Could not sign in with Google. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
-  useEffect(() => {
-    fetchRequests();
-
-    // Subscribe to real-time updates
-    const subscription = supabase
-      .from("emergency_requests")
-      .on("*", () => fetchRequests())
-      .subscribe();
-
-    return () => {
-      supabase.removeSubscription(subscription);
-    };
-  }, []);
-
-  // -------------------------
-  // Button Handlers
-  // -------------------------
   const handleSignOut = async () => {
     try {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
       toast({ title: "Signed Out", description: "You have been signed out successfully." });
       setUser(null);
-    } catch (error: any) {
-      toast({ title: "Sign Out Failed", description: error.message, variant: "destructive" });
+    } catch (error) {
+      toast({
+        title: "Sign Out Failed",
+        description: "Could not sign out. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
-  const handleTrackLocation = (lat?: number, lng?: number, name?: string) => {
-    if (lat && lng) {
-      const url = `https://www.google.com/maps?q=${lat},${lng}`;
-      window.open(url, "_blank");
-    } else {
-      toast({ title: "Location not available", description: `Cannot track location for ${name}`, variant: "destructive" });
-    }
+  // Demo: Track location
+  const handleTrackLocation = (name: string) => {
+    toast({ title: "Track Location", description: `Tracking location for ${name} (demo).` });
   };
 
-  const handleAssignAmbulance = async (id: number) => {
-    const { error } = await supabase
-      .from("emergency_requests")
-      .update({ status: "ambulance assigned" })
-      .eq("id", id);
-
-    if (error) toast({ title: "Error", description: error.message, variant: "destructive" });
-    else fetchRequests();
+  // Manage profile options
+  const handleAssignAmbulance = (name: string) => {
+    toast({ title: "Assign Ambulance", description: `Ambulance assigned to ${name} (demo).` });
   };
 
-  const handleDeletePatient = async (id: number) => {
-    const { error } = await supabase
-      .from("emergency_requests")
-      .delete()
-      .eq("id", id);
-
-    if (error) toast({ title: "Error", description: error.message, variant: "destructive" });
-    else fetchRequests();
+  const handleDeletePatient = (id: number) => {
+    setRequests((prev) => prev.filter((req) => req.id !== id));
+    toast({ title: "Patient Deleted", description: "Patient removed from the list (demo)." });
   };
 
-  // -------------------------
-  // Render
-  // -------------------------
-  if (loading) return <p className="text-center py-20">Loading...</p>;
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <p className="text-muted-foreground">Loading...</p>
+      </div>
+    );
+  }
 
-  if (!user) return <p className="text-center py-20">Not logged in</p>;
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-background">
+        <header className="bg-primary text-primary-foreground py-4 px-4 shadow-lg">
+          <div className="container mx-auto flex justify-between items-center">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="h-8 w-8" />
+              <h1 className="text-2xl font-bold">Staff Portal</h1>
+            </div>
+            <Button variant="secondary" onClick={() => navigate("/")}>Back to Home</Button>
+          </div>
+        </header>
+        <main className="container mx-auto px-4 py-16 max-w-md">
+          <Card className="p-8 shadow-xl">
+            <div className="text-center mb-8">
+              <h2 className="text-2xl font-bold mb-2">Staff Login</h2>
+              <p className="text-muted-foreground">Sign in to access the admin dashboard</p>
+            </div>
+            <Button onClick={handleGoogleSignIn} className="w-full h-12 text-lg" size="lg">
+              Continue with Google
+            </Button>
+          </Card>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -147,26 +136,21 @@ const Admin = () => {
 
       <main className="container mx-auto px-4 py-8">
         <Card className="p-6">
-          <h2 className="text-xl font-bold mb-4">Emergency Requests</h2>
-
-          {requests.length === 0 && <p className="text-muted-foreground">No emergency requests found.</p>}
+          <h2 className="text-xl font-bold mb-4">Emergency Requests Dashboard</h2>
 
           <div className="space-y-4">
             {requests.map((req) => (
-              <div key={req.id} className="p-4 border rounded flex flex-col md:flex-row md:justify-between md:items-center gap-2">
+              <div key={req.id} className="p-4 border rounded shadow-sm flex flex-col md:flex-row md:justify-between md:items-center gap-2">
                 <div>
                   <p><strong>Name:</strong> {req.name}</p>
-                  <p><strong>Contact:</strong> {req.contact_number}</p>
-                  <p><strong>Patient Count:</strong> {req.patient_count}</p>
                   <p><strong>Details:</strong> {req.details}</p>
-                  <p><strong>Status:</strong> {req.status || "pending"}</p>
-                  {req.latitude && req.longitude && <p><strong>Coordinates:</strong> {req.latitude}, {req.longitude}</p>}
+                  <p><strong>Date:</strong> {req.created_at}</p>
                 </div>
                 <div className="flex gap-2 mt-2 md:mt-0">
-                  <Button variant="outline" size="sm" onClick={() => handleTrackLocation(req.latitude, req.longitude, req.name)}>
+                  <Button variant="outline" size="sm" onClick={() => handleTrackLocation(req.name)}>
                     <MapPin className="mr-1 h-4 w-4" /> Track Location
                   </Button>
-                  <Button variant="outline" size="sm" onClick={() => handleAssignAmbulance(req.id)}>
+                  <Button variant="outline" size="sm" onClick={() => handleAssignAmbulance(req.name)}>
                     <Truck className="mr-1 h-4 w-4" /> Assign Ambulance
                   </Button>
                   <Button variant="destructive" size="sm" onClick={() => handleDeletePatient(req.id)}>
