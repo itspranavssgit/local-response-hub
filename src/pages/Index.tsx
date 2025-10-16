@@ -229,7 +229,7 @@ const Index = () => {
   );
 };
 import React, { useState } from 'react';
-import MapComponent from '../components/MapComponent';
+import MapComponent from 'src/components/MapComponent';
 
 export default function EmergencyRequest() {
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
