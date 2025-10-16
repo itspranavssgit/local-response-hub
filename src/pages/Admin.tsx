@@ -4,23 +4,20 @@ import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase";
 import { useNavigate } from "react-router-dom";
-import { LogOut, AlertCircle, MapPin, User } from "lucide-react";
+import { LogOut, AlertCircle, MapPin, User, Trash2, Truck } from "lucide-react";
 import type { User as SupaUser } from "@supabase/supabase-js";
 
 const Admin = () => {
   const [user, setUser] = useState<SupaUser | null>(null);
   const [loading, setLoading] = useState(true);
-  const { toast } = useToast();
-  const navigate = useNavigate();
-
-  // -------------------------------
-  // Sample requests for demo
-  // -------------------------------
-  const sampleRequests = [
+  const [requests, setRequests] = useState([
     { id: 1, name: "John Doe", details: "Power outage in sector 7", created_at: "2025-10-16 10:00" },
     { id: 2, name: "Jane Smith", details: "Water leak on 3rd floor", created_at: "2025-10-16 11:15" },
     { id: 3, name: "Bob Johnson", details: "Elevator stuck at floor 5", created_at: "2025-10-16 12:30" },
-  ];
+  ]);
+
+  const { toast } = useToast();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const checkUser = async () => {
@@ -59,10 +56,7 @@ const Admin = () => {
     try {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
-      toast({
-        title: "Signed Out",
-        description: "You have been signed out successfully.",
-      });
+      toast({ title: "Signed Out", description: "You have been signed out successfully." });
       setUser(null);
     } catch (error) {
       toast({
@@ -75,18 +69,17 @@ const Admin = () => {
 
   // Demo: Track location
   const handleTrackLocation = (name: string) => {
-    toast({
-      title: "Track Location",
-      description: `Tracking location for ${name} (demo).`,
-    });
+    toast({ title: "Track Location", description: `Tracking location for ${name} (demo).` });
   };
 
-  // Demo: Manage profile
-  const handleManageProfile = (name: string) => {
-    toast({
-      title: "Manage Profile",
-      description: `Opening profile for ${name} (demo).`,
-    });
+  // Manage profile options
+  const handleAssignAmbulance = (name: string) => {
+    toast({ title: "Assign Ambulance", description: `Ambulance assigned to ${name} (demo).` });
+  };
+
+  const handleDeletePatient = (id: number) => {
+    setRequests((prev) => prev.filter((req) => req.id !== id));
+    toast({ title: "Patient Deleted", description: "Patient removed from the list (demo)." });
   };
 
   if (loading) {
@@ -106,19 +99,15 @@ const Admin = () => {
               <AlertCircle className="h-8 w-8" />
               <h1 className="text-2xl font-bold">Staff Portal</h1>
             </div>
-            <Button variant="secondary" onClick={() => navigate("/")}>
-              Back to Home
-            </Button>
+            <Button variant="secondary" onClick={() => navigate("/")}>Back to Home</Button>
           </div>
         </header>
-
         <main className="container mx-auto px-4 py-16 max-w-md">
           <Card className="p-8 shadow-xl">
             <div className="text-center mb-8">
               <h2 className="text-2xl font-bold mb-2">Staff Login</h2>
               <p className="text-muted-foreground">Sign in to access the admin dashboard</p>
             </div>
-
             <Button onClick={handleGoogleSignIn} className="w-full h-12 text-lg" size="lg">
               Continue with Google
             </Button>
@@ -139,8 +128,7 @@ const Admin = () => {
           <div className="flex items-center gap-4">
             <span className="text-sm">{user.email}</span>
             <Button variant="secondary" onClick={handleSignOut} size="sm">
-              <LogOut className="mr-2 h-4 w-4" />
-              Sign Out
+              <LogOut className="mr-2 h-4 w-4" /> Sign Out
             </Button>
           </div>
         </div>
@@ -151,7 +139,7 @@ const Admin = () => {
           <h2 className="text-xl font-bold mb-4">Emergency Requests Dashboard</h2>
 
           <div className="space-y-4">
-            {sampleRequests.map((req) => (
+            {requests.map((req) => (
               <div key={req.id} className="p-4 border rounded shadow-sm flex flex-col md:flex-row md:justify-between md:items-center gap-2">
                 <div>
                   <p><strong>Name:</strong> {req.name}</p>
@@ -159,19 +147,14 @@ const Admin = () => {
                   <p><strong>Date:</strong> {req.created_at}</p>
                 </div>
                 <div className="flex gap-2 mt-2 md:mt-0">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleTrackLocation(req.name)}
-                  >
+                  <Button variant="outline" size="sm" onClick={() => handleTrackLocation(req.name)}>
                     <MapPin className="mr-1 h-4 w-4" /> Track Location
                   </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleManageProfile(req.name)}
-                  >
-                    <User className="mr-1 h-4 w-4" /> Manage Profile
+                  <Button variant="outline" size="sm" onClick={() => handleAssignAmbulance(req.name)}>
+                    <Truck className="mr-1 h-4 w-4" /> Assign Ambulance
+                  </Button>
+                  <Button variant="destructive" size="sm" onClick={() => handleDeletePatient(req.id)}>
+                    <Trash2 className="mr-1 h-4 w-4" /> Delete Patient
                   </Button>
                 </div>
               </div>
