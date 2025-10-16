@@ -1,14 +1,23 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase";
 import { AlertCircle, MapPin, Phone, Users, Clock } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+
+// ✅ Import your MapComponent with correct relative path
+import MapComponent from "../components/MapComponent";
 
 const Index = () => {
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
@@ -29,7 +38,7 @@ const Index = () => {
             lng: position.coords.longitude,
           });
         },
-        (error) => {
+        () => {
           toast({
             title: "Location Error",
             description: "Could not detect your location. Please enable location services.",
@@ -42,7 +51,7 @@ const Index = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!location) {
       toast({
         title: "Location Required",
@@ -77,7 +86,7 @@ const Index = () => {
       setEmergencyType("");
       setContactPhone("");
       setNotes("");
-    } catch (error) {
+    } catch {
       toast({
         title: "Submission Failed",
         description: "Could not submit request. Please try again.",
@@ -111,8 +120,13 @@ const Index = () => {
       <main className="container mx-auto px-4 py-8 max-w-2xl">
         <Card className="p-6 shadow-xl border-2">
           <div className="mb-6 text-center">
-            <h2 className="text-3xl font-bold text-foreground mb-2">Reques Emergency Help</h2>
+            <h2 className="text-3xl font-bold text-foreground mb-2">Request Emergency Help</h2>
             <p className="text-muted-foreground">Quick medical transport for rural areas</p>
+          </div>
+
+          {/* Map Section */}
+          <div className="mb-6">
+            <MapComponent onLocationChange={setLocation} mapHeight="350px" />
           </div>
 
           {/* Location Status */}
@@ -120,13 +134,18 @@ const Index = () => {
             <div className="flex items-center gap-2 text-sm">
               <MapPin className="h-5 w-5 text-primary" />
               {location ? (
-                <span className="text-foreground font-medium">Location detected ✓</span>
+                <span className="text-foreground font-medium">
+                  Location detected ✓
+                </span>
               ) : (
-                <span className="text-muted-foreground">Detecting location...</span>
+                <span className="text-muted-foreground">
+                  Detecting location...
+                </span>
               )}
             </div>
           </div>
 
+          {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Patient Count */}
             <div className="space-y-2">
@@ -228,33 +247,5 @@ const Index = () => {
     </div>
   );
 };
-import React, { useState } from 'react';
-import MapComponent from 'src/components/MapComponent';
-
-export default function EmergencyRequest() {
-  const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    console.log('Emergency request sent with location:', location);
-    // You can later send this data to Supabase
-  };
-
-  return (
-    <div className="p-6 max-w-xl mx-auto space-y-4">
-      <h1 className="text-2xl font-bold mb-2">Emergency Request</h1>
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <MapComponent onLocationChange={setLocation} mapHeight="350px" />
-        <button
-          type="submit"
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-        >
-          Submit Request
-        </button>
-      </form>
-    </div>
-  );
-}
 
 export default Index;
-
