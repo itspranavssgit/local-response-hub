@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase";
 import { useNavigate } from "react-router-dom";
-import { LogOut, AlertCircle, MapPin, User, Trash2, Truck } from "lucide-react";
+import { LogOut, AlertCircle, MapPin, Trash2, Truck } from "lucide-react";
 import type { User as SupaUser } from "@supabase/supabase-js";
 
 interface EmergencyRequest {
@@ -13,6 +13,8 @@ interface EmergencyRequest {
   details: string;
   created_at: string;
   status?: string;
+  latitude?: number;
+  longitude?: number;
 }
 
 const Admin = () => {
@@ -22,6 +24,9 @@ const Admin = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
 
+  // -------------------------
+  // Authentication
+  // -------------------------
   useEffect(() => {
     const checkUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -39,9 +44,9 @@ const Admin = () => {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
-  // ---------------------------
-  // Fetch requests from Supabase
-  // ---------------------------
+  // -------------------------
+  // Fetch emergency requests
+  // -------------------------
   const fetchRequests = async () => {
     const { data, error } = await supabase
       .from<EmergencyRequest>("emergency_requests")
@@ -58,7 +63,6 @@ const Admin = () => {
   useEffect(() => {
     fetchRequests();
 
-    // Optional: subscribe to real-time changes
     const subscription = supabase
       .from("emergency_requests")
       .on("*", () => fetchRequests())
@@ -69,6 +73,9 @@ const Admin = () => {
     };
   }, []);
 
+  // -------------------------
+  // Button Handlers
+  // -------------------------
   const handleSignOut = async () => {
     try {
       const { error } = await supabase.auth.signOut();
@@ -80,8 +87,13 @@ const Admin = () => {
     }
   };
 
-  const handleTrackLocation = (name: string) => {
-    toast({ title: "Track Location", description: `Tracking location for ${name} (demo).` });
+  const handleTrackLocation = (lat?: number, lng?: number, name?: string) => {
+    if (lat && lng) {
+      const url = `https://www.google.com/maps?q=${lat},${lng}`;
+      window.open(url, "_blank");
+    } else {
+      toast({ title: "Location not available", description: `Cannot track location for ${name}`, variant: "destructive" });
+    }
   };
 
   const handleAssignAmbulance = async (id: number) => {
@@ -112,6 +124,9 @@ const Admin = () => {
     }
   };
 
+  // -------------------------
+  // Render
+  // -------------------------
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -138,7 +153,6 @@ const Admin = () => {
               <h2 className="text-2xl font-bold mb-2">Staff Login</h2>
               <p className="text-muted-foreground">Sign in to access the admin dashboard</p>
             </div>
-            {/* You can add Google Sign-In button here */}
           </Card>
         </main>
       </div>
@@ -174,9 +188,12 @@ const Admin = () => {
                   <p><strong>Details:</strong> {req.details}</p>
                   <p><strong>Date:</strong> {req.created_at}</p>
                   <p><strong>Status:</strong> {req.status || "pending"}</p>
+                  {req.latitude && req.longitude && (
+                    <p><strong>Coordinates:</strong> {req.latitude}, {req.longitude}</p>
+                  )}
                 </div>
                 <div className="flex gap-2 mt-2 md:mt-0">
-                  <Button variant="outline" size="sm" onClick={() => handleTrackLocation(req.name)}>
+                  <Button variant="outline" size="sm" onClick={() => handleTrackLocation(req.latitude, req.longitude, req.name)}>
                     <MapPin className="mr-1 h-4 w-4" /> Track Location
                   </Button>
                   <Button variant="outline" size="sm" onClick={() => handleAssignAmbulance(req.id)}>
