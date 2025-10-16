@@ -7,15 +7,18 @@ import { useNavigate } from "react-router-dom";
 import { LogOut, AlertCircle, MapPin, User, Trash2, Truck } from "lucide-react";
 import type { User as SupaUser } from "@supabase/supabase-js";
 
+interface EmergencyRequest {
+  id: number;
+  name: string;
+  details: string;
+  created_at: string;
+  status?: string;
+}
+
 const Admin = () => {
   const [user, setUser] = useState<SupaUser | null>(null);
   const [loading, setLoading] = useState(true);
-  const [requests, setRequests] = useState([
-    { id: 1, name: "Lingappa Naik", details: "Power outage in sector 7", created_at: "2025-10-16 10:00" },
-    { id: 2, name: "Kiran jhonson", details: "Water leak on 3rd floor", created_at: "2025-10-16 11:15" },
-    { id: 3, name: "Bob Shinde", details: "Elevator stuck at floor 5", created_at: "2025-10-16 12:30" },
-  ]);
-
+  const [requests, setRequests] = useState<EmergencyRequest[]>([]);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -36,21 +39,35 @@ const Admin = () => {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
-  const handleGoogleSignIn = async () => {
-    try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: { redirectTo: `${window.location.origin}/admin` },
-      });
-      if (error) throw error;
-    } catch (error) {
-      toast({
-        title: "Sign In Failed",
-        description: "Could not sign in with Google. Please try again.",
-        variant: "destructive",
-      });
+  // ---------------------------
+  // Fetch requests from Supabase
+  // ---------------------------
+  const fetchRequests = async () => {
+    const { data, error } = await supabase
+      .from<EmergencyRequest>("emergency_requests")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      toast({ title: "Error fetching requests", description: error.message, variant: "destructive" });
+    } else {
+      setRequests(data || []);
     }
   };
+
+  useEffect(() => {
+    fetchRequests();
+
+    // Optional: subscribe to real-time changes
+    const subscription = supabase
+      .from("emergency_requests")
+      .on("*", () => fetchRequests())
+      .subscribe();
+
+    return () => {
+      supabase.removeSubscription(subscription);
+    };
+  }, []);
 
   const handleSignOut = async () => {
     try {
@@ -59,27 +76,40 @@ const Admin = () => {
       toast({ title: "Signed Out", description: "You have been signed out successfully." });
       setUser(null);
     } catch (error) {
-      toast({
-        title: "Sign Out Failed",
-        description: "Could not sign out. Please try again.",
-        variant: "destructive",
-      });
+      toast({ title: "Sign Out Failed", description: "Could not sign out. Please try again.", variant: "destructive" });
     }
   };
 
-  // Demo: Track location
   const handleTrackLocation = (name: string) => {
     toast({ title: "Track Location", description: `Tracking location for ${name} (demo).` });
   };
 
-  // Manage profile options
-  const handleAssignAmbulance = (name: string) => {
-    toast({ title: "Assign Ambulance", description: `Ambulance assigned to ${name} (demo).` });
+  const handleAssignAmbulance = async (id: number) => {
+    const { error } = await supabase
+      .from("emergency_requests")
+      .update({ status: "ambulance assigned" })
+      .eq("id", id);
+
+    if (error) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Ambulance Assigned", description: "Ambulance assigned successfully." });
+      fetchRequests();
+    }
   };
 
-  const handleDeletePatient = (id: number) => {
-    setRequests((prev) => prev.filter((req) => req.id !== id));
-    toast({ title: "Patient Deleted", description: "Patient removed from the list (demo)." });
+  const handleDeletePatient = async (id: number) => {
+    const { error } = await supabase
+      .from("emergency_requests")
+      .delete()
+      .eq("id", id);
+
+    if (error) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Patient Deleted", description: "Patient removed successfully." });
+      fetchRequests();
+    }
   };
 
   if (loading) {
@@ -108,9 +138,7 @@ const Admin = () => {
               <h2 className="text-2xl font-bold mb-2">Staff Login</h2>
               <p className="text-muted-foreground">Sign in to access the admin dashboard</p>
             </div>
-            <Button onClick={handleGoogleSignIn} className="w-full h-12 text-lg" size="lg">
-              Continue with Google
-            </Button>
+            {/* You can add Google Sign-In button here */}
           </Card>
         </main>
       </div>
@@ -145,12 +173,13 @@ const Admin = () => {
                   <p><strong>Name:</strong> {req.name}</p>
                   <p><strong>Details:</strong> {req.details}</p>
                   <p><strong>Date:</strong> {req.created_at}</p>
+                  <p><strong>Status:</strong> {req.status || "pending"}</p>
                 </div>
                 <div className="flex gap-2 mt-2 md:mt-0">
                   <Button variant="outline" size="sm" onClick={() => handleTrackLocation(req.name)}>
                     <MapPin className="mr-1 h-4 w-4" /> Track Location
                   </Button>
-                  <Button variant="outline" size="sm" onClick={() => handleAssignAmbulance(req.name)}>
+                  <Button variant="outline" size="sm" onClick={() => handleAssignAmbulance(req.id)}>
                     <Truck className="mr-1 h-4 w-4" /> Assign Ambulance
                   </Button>
                   <Button variant="destructive" size="sm" onClick={() => handleDeletePatient(req.id)}>
