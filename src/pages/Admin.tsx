@@ -11,9 +11,9 @@ const Admin = () => {
   const [user, setUser] = useState<SupaUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [requests, setRequests] = useState([
-    { id: 1, contact_number: "9999999999", details: "Power outage in sector 7", created_at: "2025-10-16 10:00" },
-    { id: 2, contact_number: "8888888888", details: "Water leak on 3rd floor", created_at: "2025-10-16 11:15" },
-    { id: 3, contact_number: "7777777777", details: "Elevator stuck at floor 5", created_at: "2025-10-16 12:30" },
+    { id: 1, contact_number: "9999999999", details: "rajwada,Ichalkaranji", created_at: "2025-10-16 10:00" },
+    { id: 2, contact_number: "8888888888", details: "rajwada,Ichalkaranji", created_at: "2025-10-16 11:15" },
+    { id: 3, contact_number: "7777777777", details: "rajwada,Ichalkaranji", created_at: "2025-10-16 12:30" },
   ]);
 
   const { toast } = useToast();
