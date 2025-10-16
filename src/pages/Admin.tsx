@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase";
+import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { LogOut, AlertCircle } from "lucide-react";
 import type { User } from "@supabase/supabase-js";
@@ -16,12 +16,13 @@ const Admin = () => {
   const navigate = useNavigate();
 
   // -------------------------------
-  // 1️⃣ Check user and fetch requests
+  // 1️⃣ Check user on mount
   // -------------------------------
   useEffect(() => {
     const checkUser = async () => {
       try {
         const { data, error } = await supabase.auth.getUser();
+        console.log("Supabase user data:", data);
         if (error) throw error;
 
         setUser(data?.user ?? null);
@@ -29,8 +30,9 @@ const Admin = () => {
 
         if (data?.user) fetchRequests();
       } catch (err: any) {
+        console.error("checkUser error:", err);
         toast({
-          title: "Error",
+          title: "Error fetching user",
           description: err.message || "Something went wrong",
           variant: "destructive",
         });
@@ -50,7 +52,7 @@ const Admin = () => {
   }, [navigate]);
 
   // -------------------------------
-  // 2️⃣ Fetch requests from Supabase
+  // 2️⃣ Fetch requests
   // -------------------------------
   const fetchRequests = async () => {
     try {
@@ -59,10 +61,12 @@ const Admin = () => {
         .select("*")
         .order("created_at", { ascending: false });
 
+      console.log("Fetched requests:", data);
       if (error) throw error;
 
       setRequests(data ?? []);
     } catch (err: any) {
+      console.error("fetchRequests error:", err);
       toast({
         title: "Error fetching requests",
         description: err.message || "Could not fetch requests",
@@ -72,12 +76,13 @@ const Admin = () => {
   };
 
   // -------------------------------
-  // 3️⃣ Real-time subscription for new requests
+  // 3️⃣ Real-time subscription
   // -------------------------------
   useEffect(() => {
     const subscription = supabase
       .from("requests")
       .on("INSERT", (payload) => {
+        console.log("New request inserted:", payload.new);
         setRequests((prev) => [payload.new, ...prev]);
       })
       .subscribe();
@@ -201,16 +206,14 @@ const Admin = () => {
         <Card className="p-6">
           <h2 className="text-xl font-bold mb-4">Emergency Requests Dashboard</h2>
 
+          {/* Safe debug display of requests */}
           {requests.length === 0 ? (
             <p className="text-muted-foreground">No requests yet.</p>
           ) : (
             <div className="space-y-4">
               {requests.map((req: any, index: number) => (
                 <div key={req.id ?? index} className="p-4 border rounded shadow-sm">
-                  <p><strong>Request ID:</strong> {req.id ?? "N/A"}</p>
-                  <p><strong>Name:</strong> {req.name ?? "N/A"}</p>
-                  <p><strong>Details:</strong> {req.details ?? "N/A"}</p>
-                  <p><strong>Date:</strong> {req.created_at ? new Date(req.created_at).toLocaleString() : "N/A"}</p>
+                  <pre>{JSON.stringify(req, null, 2)}</pre>
                 </div>
               ))}
             </div>
