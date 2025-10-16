@@ -10,11 +10,13 @@ import type { User as SupaUser } from "@supabase/supabase-js";
 interface EmergencyRequest {
   id: number;
   name: string;
+  contact_number: string;
+  patient_count: number;
   details: string;
-  created_at: string;
   status?: string;
   latitude?: number;
   longitude?: number;
+  created_at: string;
 }
 
 const Admin = () => {
@@ -52,6 +54,8 @@ const Admin = () => {
       .from<EmergencyRequest>("emergency_requests")
       .select("*")
       .order("created_at", { ascending: false });
+
+    console.log("Supabase data:", data, "Error:", error); // debug
 
     if (error) {
       toast({ title: "Error fetching requests", description: error.message, variant: "destructive" });
@@ -147,14 +151,6 @@ const Admin = () => {
             <Button variant="secondary" onClick={() => navigate("/")}>Back to Home</Button>
           </div>
         </header>
-        <main className="container mx-auto px-4 py-16 max-w-md">
-          <Card className="p-8 shadow-xl">
-            <div className="text-center mb-8">
-              <h2 className="text-2xl font-bold mb-2">Staff Login</h2>
-              <p className="text-muted-foreground">Sign in to access the admin dashboard</p>
-            </div>
-          </Card>
-        </main>
       </div>
     );
   }
@@ -181,12 +177,15 @@ const Admin = () => {
           <h2 className="text-xl font-bold mb-4">Emergency Requests Dashboard</h2>
 
           <div className="space-y-4">
+            {requests.length === 0 && <p className="text-muted-foreground">No emergency requests yet.</p>}
+
             {requests.map((req) => (
               <div key={req.id} className="p-4 border rounded shadow-sm flex flex-col md:flex-row md:justify-between md:items-center gap-2">
                 <div>
                   <p><strong>Name:</strong> {req.name}</p>
+                  <p><strong>Contact:</strong> {req.contact_number}</p>
+                  <p><strong>Patient Count:</strong> {req.patient_count}</p>
                   <p><strong>Details:</strong> {req.details}</p>
-                  <p><strong>Date:</strong> {req.created_at}</p>
                   <p><strong>Status:</strong> {req.status || "pending"}</p>
                   {req.latitude && req.longitude && (
                     <p><strong>Coordinates:</strong> {req.latitude}, {req.longitude}</p>
