@@ -11,9 +11,9 @@ const Admin = () => {
   const [user, setUser] = useState<SupaUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [requests, setRequests] = useState([
-    { id: 1, name: "John Doe", details: "Power outage in sector 7", created_at: "2025-10-16 10:00" },
-    { id: 2, name: "Jane Smith", details: "Water leak on 3rd floor", created_at: "2025-10-16 11:15" },
-    { id: 3, name: "Bob Johnson", details: "Elevator stuck at floor 5", created_at: "2025-10-16 12:30" },
+    { id: 1, contact_number: "9999999999", details: "Power outage in sector 7", created_at: "2025-10-16 10:00" },
+    { id: 2, contact_number: "8888888888", details: "Water leak on 3rd floor", created_at: "2025-10-16 11:15" },
+    { id: 3, contact_number: "7777777777", details: "Elevator stuck at floor 5", created_at: "2025-10-16 12:30" },
   ]);
 
   const { toast } = useToast();
@@ -68,13 +68,13 @@ const Admin = () => {
   };
 
   // Demo: Track location
-  const handleTrackLocation = (name: string) => {
-    toast({ title: "Track Location", description: `Tracking location for ${name} (demo).` });
+  const handleTrackLocation = (contact_number: string) => {
+    toast({ title: "Track Location", description: `Tracking location for ${contact_number} (demo).` });
   };
 
   // Manage profile options
-  const handleAssignAmbulance = (name: string) => {
-    toast({ title: "Assign Ambulance", description: `Ambulance assigned to ${name} (demo).` });
+  const handleAssignAmbulance = (contact_number: string) => {
+    toast({ title: "Assign Ambulance", description: `Ambulance assigned to ${contact_number} (demo).` });
   };
 
   const handleDeletePatient = (id: number) => {
@@ -142,15 +142,15 @@ const Admin = () => {
             {requests.map((req) => (
               <div key={req.id} className="p-4 border rounded shadow-sm flex flex-col md:flex-row md:justify-between md:items-center gap-2">
                 <div>
-                  <p><strong>Name:</strong> {req.name}</p>
+                  <p><strong>Contact Number:</strong> {req.contact_number}</p>
                   <p><strong>Details:</strong> {req.details}</p>
                   <p><strong>Date:</strong> {req.created_at}</p>
                 </div>
                 <div className="flex gap-2 mt-2 md:mt-0">
-                  <Button variant="outline" size="sm" onClick={() => handleTrackLocation(req.name)}>
+                  <Button variant="outline" size="sm" onClick={() => handleTrackLocation(req.contact_number)}>
                     <MapPin className="mr-1 h-4 w-4" /> Track Location
                   </Button>
-                  <Button variant="outline" size="sm" onClick={() => handleAssignAmbulance(req.name)}>
+                  <Button variant="outline" size="sm" onClick={() => handleAssignAmbulance(req.contact_number)}>
                     <Truck className="mr-1 h-4 w-4" /> Assign Ambulance
                   </Button>
                   <Button variant="destructive" size="sm" onClick={() => handleDeletePatient(req.id)}>
