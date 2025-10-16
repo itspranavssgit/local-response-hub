@@ -55,7 +55,7 @@ const Admin = () => {
       .select("*")
       .order("created_at", { ascending: false });
 
-    console.log("Supabase data:", data, "Error:", error); // debug
+    console.log("Supabase data:", data, "Error:", error);
 
     if (error) {
       toast({ title: "Error fetching requests", description: error.message, variant: "destructive" });
@@ -67,6 +67,7 @@ const Admin = () => {
   useEffect(() => {
     fetchRequests();
 
+    // Subscribe to real-time updates
     const subscription = supabase
       .from("emergency_requests")
       .on("*", () => fetchRequests())
@@ -86,8 +87,8 @@ const Admin = () => {
       if (error) throw error;
       toast({ title: "Signed Out", description: "You have been signed out successfully." });
       setUser(null);
-    } catch (error) {
-      toast({ title: "Sign Out Failed", description: "Could not sign out. Please try again.", variant: "destructive" });
+    } catch (error: any) {
+      toast({ title: "Sign Out Failed", description: error.message, variant: "destructive" });
     }
   };
 
@@ -106,12 +107,8 @@ const Admin = () => {
       .update({ status: "ambulance assigned" })
       .eq("id", id);
 
-    if (error) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
-    } else {
-      toast({ title: "Ambulance Assigned", description: "Ambulance assigned successfully." });
-      fetchRequests();
-    }
+    if (error) toast({ title: "Error", description: error.message, variant: "destructive" });
+    else fetchRequests();
   };
 
   const handleDeletePatient = async (id: number) => {
@@ -120,40 +117,16 @@ const Admin = () => {
       .delete()
       .eq("id", id);
 
-    if (error) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
-    } else {
-      toast({ title: "Patient Deleted", description: "Patient removed successfully." });
-      fetchRequests();
-    }
+    if (error) toast({ title: "Error", description: error.message, variant: "destructive" });
+    else fetchRequests();
   };
 
   // -------------------------
   // Render
   // -------------------------
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <p className="text-muted-foreground">Loading...</p>
-      </div>
-    );
-  }
+  if (loading) return <p className="text-center py-20">Loading...</p>;
 
-  if (!user) {
-    return (
-      <div className="min-h-screen bg-background">
-        <header className="bg-primary text-primary-foreground py-4 px-4 shadow-lg">
-          <div className="container mx-auto flex justify-between items-center">
-            <div className="flex items-center gap-2">
-              <AlertCircle className="h-8 w-8" />
-              <h1 className="text-2xl font-bold">Staff Portal</h1>
-            </div>
-            <Button variant="secondary" onClick={() => navigate("/")}>Back to Home</Button>
-          </div>
-        </header>
-      </div>
-    );
-  }
+  if (!user) return <p className="text-center py-20">Not logged in</p>;
 
   return (
     <div className="min-h-screen bg-background">
@@ -174,22 +147,20 @@ const Admin = () => {
 
       <main className="container mx-auto px-4 py-8">
         <Card className="p-6">
-          <h2 className="text-xl font-bold mb-4">Emergency Requests Dashboard</h2>
+          <h2 className="text-xl font-bold mb-4">Emergency Requests</h2>
+
+          {requests.length === 0 && <p className="text-muted-foreground">No emergency requests found.</p>}
 
           <div className="space-y-4">
-            {requests.length === 0 && <p className="text-muted-foreground">No emergency requests yet.</p>}
-
             {requests.map((req) => (
-              <div key={req.id} className="p-4 border rounded shadow-sm flex flex-col md:flex-row md:justify-between md:items-center gap-2">
+              <div key={req.id} className="p-4 border rounded flex flex-col md:flex-row md:justify-between md:items-center gap-2">
                 <div>
                   <p><strong>Name:</strong> {req.name}</p>
                   <p><strong>Contact:</strong> {req.contact_number}</p>
                   <p><strong>Patient Count:</strong> {req.patient_count}</p>
                   <p><strong>Details:</strong> {req.details}</p>
                   <p><strong>Status:</strong> {req.status || "pending"}</p>
-                  {req.latitude && req.longitude && (
-                    <p><strong>Coordinates:</strong> {req.latitude}, {req.longitude}</p>
-                  )}
+                  {req.latitude && req.longitude && <p><strong>Coordinates:</strong> {req.latitude}, {req.longitude}</p>}
                 </div>
                 <div className="flex gap-2 mt-2 md:mt-0">
                   <Button variant="outline" size="sm" onClick={() => handleTrackLocation(req.latitude, req.longitude, req.name)}>
